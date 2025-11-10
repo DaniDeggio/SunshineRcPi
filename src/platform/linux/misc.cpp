@@ -29,6 +29,7 @@
 // local includes
 #include "graphics.h"
 #include "misc.h"
+#include "picamera_capture.h"
 #include "src/config.h"
 #include "src/entry_handler.h"
 #include "src/logging.h"
@@ -787,6 +788,9 @@ namespace platf {
 #ifdef SUNSHINE_BUILD_X11
       X11,  ///< X11
 #endif
+#ifdef SUNSHINE_BUILD_PICAMERA
+  PICAMERA,  ///< PiCamera
+#endif
       MAX_FLAGS  ///< The maximum number of flags
     };
   }  // namespace source
@@ -829,6 +833,21 @@ namespace platf {
   }
 #endif
 
+#ifdef SUNSHINE_BUILD_PICAMERA
+  bool verify_picamera() {
+    return picamera::initialize();
+  }
+
+  std::vector<std::string> picamera_display_names() {
+    return picamera::display_names();
+  }
+
+  std::shared_ptr<display_t> picamera_display(mem_type_e hwdevice_type, const std::string &display_name, const video::config_t &config) {
+    (void) hwdevice_type;
+    return picamera::create_display(display_name, config);
+  }
+#endif
+
   std::vector<std::string> display_names(mem_type_e hwdevice_type) {
 #ifdef SUNSHINE_BUILD_CUDA
     // display using NvFBC only supports mem_type_e::cuda
@@ -849,6 +868,11 @@ namespace platf {
 #ifdef SUNSHINE_BUILD_X11
     if (sources[source::X11]) {
       return x11_display_names();
+    }
+#endif
+#ifdef SUNSHINE_BUILD_PICAMERA
+    if (sources[source::PICAMERA]) {
+      return picamera_display_names();
     }
 #endif
     return {};
@@ -888,6 +912,12 @@ namespace platf {
       return x11_display(hwdevice_type, display_name, config);
     }
 #endif
+#ifdef SUNSHINE_BUILD_PICAMERA
+    if (sources[source::PICAMERA]) {
+      BOOST_LOG(info) << "Capturing with PiCamera"sv;
+      return picamera_display(hwdevice_type, display_name, config);
+    }
+#endif
 
     return nullptr;
   }
@@ -920,6 +950,13 @@ namespace platf {
     if ((config::video.capture.empty() && sources.none()) || config::video.capture == "nvfbc") {
       if (verify_nvfbc()) {
         sources[source::NVFBC] = true;
+      }
+    }
+#endif
+#ifdef SUNSHINE_BUILD_PICAMERA
+    if ((config::video.capture.empty() && sources.none()) || config::video.capture == "picamera") {
+      if (verify_picamera()) {
+        sources[source::PICAMERA] = true;
       }
     }
 #endif

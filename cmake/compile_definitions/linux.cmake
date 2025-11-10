@@ -172,6 +172,13 @@ if(NOT ${CUDA_FOUND}
     message(FATAL_ERROR "Couldn't find either cuda, wayland, x11, (libdrm and libcap), or libva")
 endif()
 
+if(${SUNSHINE_ENABLE_PICAMERA})
+    add_compile_definitions(SUNSHINE_BUILD_PICAMERA)
+    list(APPEND PLATFORM_TARGET_FILES
+            "${CMAKE_SOURCE_DIR}/src/platform/linux/picamera_capture.h"
+            "${CMAKE_SOURCE_DIR}/src/platform/linux/picamera_capture.cpp")
+endif()
+
 # tray icon
 if(${SUNSHINE_ENABLE_TRAY})
     pkg_check_modules(APPINDICATOR ayatana-appindicator3-0.1)
